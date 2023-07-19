@@ -1,6 +1,31 @@
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
+#include <stdlib.h>
+#include <stdbool.h>
+
+void login (void);
+void registration(void);
+void user_log_in(char *username, char *password);
+void display_user_data(char *username,char *password) ;
+FILE *open_user_data_file(const char *filename, const char *mode);
+void initializeCarList();
+void displayCarList();
+void displayRentedCar(char *username, char *password);
+void rentCar(char *username, char *password);
+void displayCarRatings();
+
+struct login{
+    char fname[40];
+    char lname[40];
+    char username[40];
+    char password[30];
+    char IBAN[30];
+    char passport_id_number[10];
+    char email[40];
+    char phone_number[20];
+    char rented_car[40];
+};
+
 
 #define MAX_CARS 14
 #define MAX_NAME_LENGTH 50
@@ -15,7 +40,190 @@ typedef struct {
 Car carList[MAX_CARS];
 int numCars = 0;
 
-float walletBalance = 500.0;
+
+int main (){
+    int option;
+    int choice;
+    initializeCarList();
+
+    printf("Press '1' to Register\nPress '2' to Login\n");
+    scanf("%d", &option);
+    if (option == 1){
+        registration();
+    }
+    else if (option == 2){
+        // system("clear");
+        login ();
+    }
+    return 0;
+
+} 
+
+FILE *open_user_data_file(const char *filename, const char *mode) {
+    FILE *user_data = fopen(filename, mode);
+    if (user_data == NULL) {
+        printf("Error opening file: %s\n", filename);
+        return 0;
+    }
+    return user_data;
+}
+
+int find_user(char *username, char *password, FILE *user_data) {
+    struct login l;
+    rewind(user_data);
+    while (fread(&l, sizeof(struct login), 1, user_data)) {
+        if (strcmp(username, l.username) == 0 && strcmp(password, l.password) == 0) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+
+void registration (void){
+    FILE *user_data = open_user_data_file("user_data.txt", "a");
+
+    struct login l;
+
+    getchar();
+
+    int x = 0;
+    while (x != 9){
+    printf("Welcome to the car rental service. To beggin using this app, you need to give some details\n Please, enter your First Name: \n");
+    fgets(l.fname, sizeof(l.fname), stdin);    
+
+    printf("And now, Please enter your Surname\n");
+    fgets(l.lname, sizeof(l.lname), stdin);
+
+    printf("Now we need your passport id number\n");
+    fgets(l.passport_id_number, sizeof(l.passport_id_number), stdin);
+
+    printf("Now enter your IBAN\n");
+    fgets(l.IBAN, sizeof(l.IBAN), stdin);    
+
+    printf("Now enter your email\n");
+    fgets(l.email, sizeof(l.email), stdin);
+
+    printf("Now enter your phone number\n");
+    fgets(l.phone_number, sizeof(l.phone_number), stdin);
+
+    printf("Now enter username\n");
+    fgets(l.username, sizeof(l.username), stdin);  
+
+    printf("Enter your password\n");
+    fgets(l.password, sizeof(l.password), stdin);   
+
+    if (strcmp(l.fname, "\n") == 0 || strcmp(l.lname, "\n") == 0 || strcmp(l.passport_id_number, "\n") == 0 || strcmp(l.IBAN, "\n") == 0 || strcmp(l.username, "\n") == 0 || strcmp(l.password, "\n") == 0 || strcmp(l.username, "\n") == 0 || strcmp(l.phone_number, "\n") == 0) 
+    {
+        printf("There is a mistake. Looks like you missed a line\nLet's try again\n\n");
+    }
+    else {break;}
+    }
+    strcpy(l.rented_car, "");
+    
+
+    fwrite(&l, sizeof(l), 1, user_data);
+    fclose(user_data);
+
+    printf("Registration completed successfully\nPress any key to continue");
+    getchar();
+
+    login();
+        // system("clear");
+}
+
+
+void login (void){
+    char username[40], password[30]; 
+    FILE *user_data = open_user_data_file("user_data.txt", "r");
+
+    struct login l;
+
+    getchar();
+
+    int found = 0; 
+    printf("Please enter your username and password\nEnter username:\n");
+    fgets(username, sizeof(username), stdin);
+    printf("Enter password:\n");
+    fgets(password, sizeof(password), stdin);
+
+    found = find_user(username, password, user_data);
+
+    if (found == 1){
+        printf("\nSuccessful login\n");
+        user_log_in(username,password);
+    } 
+    else{
+        printf("Incorrect login details\n");
+    }
+    fclose(user_data);
+}
+
+
+
+void user_log_in(char *username, char *password) {
+    int i = 1;
+    while (i != 0){
+    int option = 0;
+    printf("Please choose from one of the following options\n1. Look at the car catalogue / Rent a car.\n2. Display car ratings\n3. View current rented auto\n4. Display user data\n9. Log out\n");
+    scanf("%d",&option);
+    switch(option){
+        case 1:
+        // system("clear");
+            rentCar(username, password);
+            break;
+        case 2: 
+        // system("clear");
+            displayCarRatings();
+            break;
+        case 3: 
+        // system("clear");
+            displayRentedCar(username,password);
+            break;
+        case 4:
+        // system("clear");
+            display_user_data(username,password);
+            break;
+        case 9:
+            i = 0;
+            break;
+        default:
+            printf("Sorry, we cannot do that yet\n");
+        }
+    }
+        
+
+}
+
+
+void display_user_data(char *username, char *password) {
+    FILE *user_data = open_user_data_file("user_data.txt", "r");
+    struct login l;
+    int found = find_user(username, password, user_data);
+
+    if (found == 1) {
+        fseek(user_data, -sizeof(struct login), SEEK_CUR);
+        fread(&l, sizeof(struct login), 1, user_data);
+
+        printf("First name: %s\n", l.fname);
+        printf("Last name: %s\n", l.lname);
+        printf("Username: %s\n", l.username);
+        printf("IBAN: %s\n", l.IBAN);
+        printf("Password: %s\n", l.password);
+        printf("Email: %s\n", l.email);
+        printf("Phone number: %s\n", l.phone_number);
+        printf("Current car: %s\n", l.rented_car);
+    } else {
+        printf("Sorry, your details were not found. Please contact technical support.\n");
+    }
+
+    fclose(user_data);
+
+    printf("Press any key to continue\n");
+    getchar();
+    getchar();
+    // system("clear");
+}
 
 void initializeCarList() {
     Car car1;
@@ -97,23 +305,35 @@ void displayCarList() {
     }
 }
 
-void rentCar() {
+void rentCar(char *username, char *password) {
     int choice;
     displayCarList();
     printf("Choose a car to rent (enter the number): ");
     scanf("%d", &choice);
 
     if (choice >= 1 && choice <= numCars && carList[choice - 1].availability) {
-        if (walletBalance >= carList[choice - 1].price) {
             printf("You have rented the car '%s'.\n", carList[choice - 1].name);
             carList[choice - 1].availability = 0;
-            walletBalance -= carList[choice - 1].price;
-            printf("Remaining balance in your wallet: %.2f\n", walletBalance);
+
+            struct login l;
+            FILE *user_data = open_user_data_file("user_data.txt", "r+"); // Open with "r+" mode
+
+            int found = find_user(username, password, user_data);
+
+            if (found == 1) {
+                fseek(user_data, -sizeof(struct login), SEEK_CUR);
+                fread(&l, sizeof(struct login), 1, user_data);
+
+                strcpy(l.rented_car, carList[choice - 1].name);
+
+                fseek(user_data, -sizeof(struct login), SEEK_CUR);
+                fwrite(&l, sizeof(struct login), 1, user_data);
+
+                fclose(user_data);
+            } else {
+                printf("Sorry, your details were not found. Please contact technical support.\n");
+            }
         }
-        else {
-            printf("Insufficient funds in your wallet to rent the car '%s'.\n", carList[choice - 1].name);
-        }
-    }
     else {
         printf("Invalid car choice or the car is not available.\n");
     }
@@ -121,31 +341,29 @@ void rentCar() {
     printf("Press Enter to continue...");
     getchar();
     getchar();
-    system("clear");
+    // system("clear");
 }
 
-void displayRentedCar() {
-    printf("Currently rented car:\n");
-    for (int i = 0; i < numCars; i++) {
-        if (!carList[i].availability) {
-            printf("Name: %s\n", carList[i].name);
-            break;
-        }
+void displayRentedCar(char *username, char *password) {
+    FILE *user_data = open_user_data_file("user_data.txt", "r");
+    struct login l;
+    int found = find_user(username, password, user_data);
+
+    if (found == 1) {
+        fseek(user_data, -sizeof(struct login), SEEK_CUR); 
+        fread(&l, sizeof(struct login), 1, user_data);
+
+        printf("You have rented the car: %s\n", l.rented_car);
+    } else {
+        printf("Looks like you don't have any rented car.\n");
     }
 
-    printf("Press Enter to continue...");
-    getchar();
-    getchar();
-    system("clear");
-}
-
-void displayWalletBalance() {
-    printf("Wallet balance: %.2f\n", walletBalance);
+    fclose(user_data);
 
     printf("Press Enter to continue...");
     getchar();
     getchar();
-    system("clear");
+    // system("clear");
 }
 
 void displayCarRatings() {
@@ -160,51 +378,4 @@ void displayCarRatings() {
     }
 }
 
-int main() {
-    initializeCarList();
 
-    int choice;
-
-    while (1) {
-        printf("\nMenu:\n");
-        printf("1. List available cars\n");
-        printf("2. Rent a car\n");
-        printf("3. View currently rented car\n");
-        printf("4. View wallet balance\n");
-        printf("5. View car ratings\n");
-        printf("6. Exit\n");
-        printf("Choose an option: ");
-        if (scanf("%d", &choice) != 1) {
-            printf("Invalid input. Please enter a number.\n");
-            while (getchar() != '\n') {
-                continue;
-            }
-            continue;
-        }
-
-        switch (choice) {
-        case 1:
-            displayCarList();
-            break;
-        case 2:
-            rentCar();
-            break;
-        case 3:
-            displayRentedCar();
-            break;
-        case 4:
-            displayWalletBalance();
-            break;
-        case 5:
-            displayCarRatings();
-            break;
-        case 6:
-            exit(0);
-        default:
-            printf("Invalid choice. Please try again.\n");
-            break;
-        }
-    }
-
-    return 0;
-}
